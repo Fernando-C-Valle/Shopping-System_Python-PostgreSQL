@@ -15,3 +15,18 @@ as well as some useful queries can be found in the "queries.sql" file.
 This project works by using tables or Treeviews from the GUI, so when a change has to be made, it is necessary to
 select the row to be modified, and choose an option. Also, all the registration entries must be filled correctly
 in order to save the new information.
+
+
+# GUI Design
+
+The user interface looks like this:
+
+![](images/gui.png)
+
+If some fields or rows are not selected when necessary, the messages like this will be displayed.
+
+![](images/warning.png)
+
+To verify a _deletion_ action, choose an option from the message box.
+
+![](images/question.png)
