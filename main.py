@@ -136,6 +136,7 @@ class Shop:
         ttk.Button(self.oneOrderFrame, text = 'Refresh Orders', command = self.refreshOrders).grid(row = 2, column = 0)
         ttk.Button(self.oneOrderFrame, text = 'Cancel Order', command = self.cancelOrder).grid(row = 2, column = 1)
         ttk.Button(self.oneOrderFrame, text = 'Fulfill Order', command = self.fulfilledOrders).grid(row = 2, column = 2)       
+        ttk.Button(self.oneOrderFrame, text = 'See Fulfilled Orders', command = self.seeFulfilledOrders).grid(row = 2, column = 3)
        
         ##### SIXTH LABEL FRAME - ORDERS QUERIES #####
         self.queriesFrame = LabelFrame(self.root, text = 'ORDERS')
@@ -158,8 +159,9 @@ class Shop:
         self.ordersTree.heading('#4', text = 'Quantity', anchor = CENTER)
         self.ordersTree.heading('#5', text = 'Product ID', anchor = CENTER)
         self.ordersTree.heading('#6', text = 'DATE', anchor = CENTER)
-
+       
         
+
         #Automatic methods calls
         self.getUsers()
         self.getItems()
@@ -209,16 +211,19 @@ class Shop:
             self.postgresModifyer(query, args)
             self.getUsers()
         else:
-            tkinter.messagebox.showwarning('Wrong Input', 'One or more fields are not quite right. Pleas verify them.')
+            tkinter.messagebox.showwarning('Wrong Input', 'One or more fields are not quite right. Please verify them.')
 
     def saveItemData(self):
         name = self.itemName.get()
         price = self.itemPrice.get()
         qty = self.itemQuantity.get()
-        query = 'INSERT INTO items(name, price, quantity) VALUES(%s, %s, %s);'
-        args = (name, price, qty)
-        self.postgresModifyer(query, args)
-        self.getItems()
+        if(len(name) != 0 and price >= 0 and qty > 0):
+            query = 'INSERT INTO items(name, price, quantity) VALUES(%s, %s, %s);'
+            args = (name, price, qty)
+            self.postgresModifyer(query, args)
+            self.getItems()
+        else:
+            tkinter.messagebox.showwarning('Wrong Input','One or more fields are not quite right. Please verify them.')
 
     def placeOrder(self):
         try:
@@ -259,25 +264,27 @@ class Shop:
         except IndexError as e:
             tkinter.messagebox.showwarning('Nothing Selected','Please, select an order before cancelling')
             return
-        clientId = self.ordersTree.item(self.ordersTree.selection())['values'][0]
-        itemId = self.ordersTree.item(self.ordersTree.selection())['values'][4]
-        qty = self.ordersTree.item(self.ordersTree.selection())['values'][3]        
-        date = self.ordersTree.item(self.ordersTree.selection())['values'][5]
-        #Take the original quantity, minus the ordered one and put it back
-        query1 = f"SELECT quantity FROM orders WHERE itemID = {itemId} AND clientID = {clientId} AND ordered_at = '{date}';"
-        orderedQuantity = self.postgresQuery(query1)[0][0]
+        answer = tkinter.messagebox.askquestion('Verification','Are you sure you want to cancel?')
+        if(answer == 'yes'):
+            clientId = self.ordersTree.item(self.ordersTree.selection())['values'][0]
+            itemId = self.ordersTree.item(self.ordersTree.selection())['values'][4]
+            qty = self.ordersTree.item(self.ordersTree.selection())['values'][3]        
+            date = self.ordersTree.item(self.ordersTree.selection())['values'][5]
+            #Take the original quantity, minus the ordered one and put it back
+            query1 = f"SELECT quantity FROM orders WHERE itemID = {itemId} AND clientID = {clientId} AND ordered_at = '{date}';"
+            orderedQuantity = self.postgresQuery(query1)[0][0]
 
-        query2 = f'SELECT quantity FROM items WHERE item_id = {itemId};'
-        stockQuantity = self.postgresQuery(query2)[0][0]        
-        updatedQuantity = orderedQuantity + stockQuantity
+            query2 = f'SELECT quantity FROM items WHERE item_id = {itemId};'
+            stockQuantity = self.postgresQuery(query2)[0][0]        
+            updatedQuantity = orderedQuantity + stockQuantity
 
-        query3 = f'UPDATE items SET quantity = {updatedQuantity} WHERE item_id = {itemId};'
-        self.postgresModifyer(query3)
+            query3 = f'UPDATE items SET quantity = {updatedQuantity} WHERE item_id = {itemId};'
+            self.postgresModifyer(query3)
 
-        query4 = f"DELETE FROM orders WHERE clientID = {clientId} and itemID = {itemId} AND ordered_at = '{date}';"
-        self.postgresModifyer(query4)
-        self.getOrders()
-        self.getItems()
+            query4 = f"DELETE FROM orders WHERE clientID = {clientId} and itemID = {itemId} AND ordered_at = '{date}';"
+            self.postgresModifyer(query4)
+            self.getOrders()
+            self.getItems()
         
     def fulfilledOrders(self):
         try:
@@ -326,25 +333,59 @@ class Shop:
                         ON items.item_id = fulfilled_orders.itemID;"""
         buffer = self.postgresQuery(query2)
         for i in buffer:
+            self.fulfilledOrdersTree.insert('', 0, text = i[0], values = i[1:])        
+
+    def seeFulfilledOrders(self):
+        top = Toplevel()
+        top.title('Fulfilled Orders')
+        #Label frame
+        self.fulfilledOrdersFrame = LabelFrame(top, text = 'FULFILLED ORDERS')
+        self.fulfilledOrdersFrame.grid(row = 0, column = 0)
+
+        #Treeview
+        self.fulfilledOrdersTree = ttk.Treeview(self.fulfilledOrdersFrame, height = 10, columns = (1,2,3,4))
+        self.fulfilledOrdersTree.grid(row = 0, column = 0)
+        self.fulfilledOrdersTree.column('#0', width = 150, minwidth = 100, anchor = CENTER)
+        self.fulfilledOrdersTree.column('#1', width = 150, minwidth = 100, anchor = CENTER)
+        self.fulfilledOrdersTree.column('#2', width = 150, minwidth = 100, anchor = CENTER)
+        self.fulfilledOrdersTree.column('#3', width = 150, minwidth = 100, anchor = CENTER)
+        self.fulfilledOrdersTree.column('#4', width = 150, minwidth = 100, anchor = CENTER)
+        
+        self.fulfilledOrdersTree.heading('#0', text = 'Client ID', anchor = CENTER)
+        self.fulfilledOrdersTree.heading('#1', text = 'Fullname', anchor = CENTER)
+        self.fulfilledOrdersTree.heading('#2', text = 'Product ID', anchor = CENTER)
+        self.fulfilledOrdersTree.heading('#3', text = 'Product', anchor = CENTER)
+        self.fulfilledOrdersTree.heading('#4', text = 'Fulfilled At', anchor = CENTER)
+
+        query2 = """SELECT clients.client_id, clients.name, items.item_id, items.name, fulfilled_at
+                    FROM clients
+                    INNER JOIN fulfilled_orders
+                        ON clients.client_id = fulfilled_orders.clientID
+                    INNER JOIN items
+                        ON items.item_id = fulfilled_orders.itemID;"""
+        buffer = self.postgresQuery(query2)
+        for i in buffer:
             self.fulfilledOrdersTree.insert('', 0, text = i[0], values = i[1:])
 
-        
     def ordersFromUser(self):
         name = self.userFullnameOrders.get()
-        treeInfo = self.ordersTree.get_children()
-        for i in treeInfo:
-            self.ordersTree.delete(i)
-        query = """ SELECT clients.name AS Client, client_id, items.name As Product, items.price AS Price, orders.quantity, items.item_id, ordered_at
-                    FROM items
-                    INNER JOIN orders
-                        ON items.item_id = orders.itemID
-                    INNER JOIN clients
-                        ON clients.client_id = orders.clientID
-                    WHERE clients.name LIKE '%{}%'
-                    ORDER BY orders.ordered_at DESC;""".format(name)
-        buffer = self.postgresQuery(query)
-        for i in buffer:
-            self.ordersTree.insert('', 0, text = i[0], values = i[1:])        
+        if(len(name) != 0):
+            treeInfo = self.ordersTree.get_children()
+            for i in treeInfo:
+                self.ordersTree.delete(i)
+            query = """ SELECT clients.name AS Client, client_id, items.name As Product, items.price AS Price, orders.quantity, items.item_id, ordered_at
+                        FROM items
+                        INNER JOIN orders
+                            ON items.item_id = orders.itemID
+                        INNER JOIN clients
+                            ON clients.client_id = orders.clientID
+                        WHERE clients.name LIKE '%{}%'
+                        ORDER BY orders.ordered_at DESC;""".format(name)
+            buffer = self.postgresQuery(query)
+            for i in buffer:
+                self.ordersTree.insert('', 0, text = i[0], values = i[1:]) 
+        else:
+            tkinter.messagebox.showwarning('Empty field','Please, before searching enter a name.')         
     
 
     def refreshOrders(self):
