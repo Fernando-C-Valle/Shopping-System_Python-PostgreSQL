@@ -31,14 +31,6 @@ CREATE TABLE orders(
 );
 
 
-SELECT clients.name AS Client, client_id, items.name As Product, items.price AS Price, items.item_id, ordered_at
-FROM items
-INNER JOIN orders
-	ON items.item_id = orders.itemID
-INNER JOIN clients
- 	ON clients.client_id = orders.clientID;
-
-
 CREATE TABLE fulfilled_orders(
 	fulfilled_order_id BIGSERIAL NOT NULL PRIMARY KEY,
 	clientID INTEGER,
@@ -53,7 +45,7 @@ CREATE TABLE fulfilled_orders(
 	fulfilled_at TIMESTAMP DEFAULT NOW()
 );
 
-
+/*
 SELECT clients.client_id, clients.name, items.item_id, items.name, fulfilled_at
 FROM clients
 INNER JOIN fulfilled_orders
@@ -61,3 +53,12 @@ INNER JOIN fulfilled_orders
 INNER JOIN items
 	ON items.item_id = fulfilled_orders.itemID;
 
+
+
+SELECT clients.name AS Client, client_id, items.name As Product, items.price AS Price, items.item_id, ordered_at
+FROM items
+INNER JOIN orders
+	ON items.item_id = orders.itemID
+INNER JOIN clients
+ 	ON clients.client_id = orders.clientID;
+*/
