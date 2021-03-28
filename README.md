@@ -1,4 +1,4 @@
-# Shopping Sytem Using Python and PostgreSQL
+# Shopping System Using Python and PostgreSQL
 
 ## Description
 This project is focused on helping people from small companies to keep track of their clients, 
@@ -19,6 +19,8 @@ in order to save the new information.
 
 # GUI Design
 
+The GUI uses 3 main tables, where the manager of this app can find the clients, avaliable products and current orders. 
+Plus, CRUD operations can be performed in order to modify the products and customers information.
 The user interface looks like this:
 
 ![](images/gui.png)
